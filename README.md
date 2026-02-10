@@ -22,11 +22,14 @@ Coming soon:
 # Technologies Used
 
 Python 3
+
 requests - API calls for real-time market data
+
 json - data persistence and storage
+
 os - file system operations and backup management
 
-Roadmap
+# Roadmap
 - [ ] Real-time prices via API integration
 - [ ] Trending stocks - top movers of the week
 - [ ] Portfolio analysis - trim/hold/add recommendations based on position weighting and P&L
