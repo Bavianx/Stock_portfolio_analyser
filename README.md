@@ -13,7 +13,9 @@ Input validation - ensures all data entered is valid
 Coming soon:
 
  -Trending stocks this week (live API data)
+ 
  -Portfolio analysis with trim/hold/add recommendations
+ 
  -Remove stock from portfolio
 
 
