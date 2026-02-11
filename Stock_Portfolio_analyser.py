@@ -1,4 +1,4 @@
-import requests , json , os
+import requests , json , os, yfinance as yf 
 
 def stock_portfolio_system():
     filename = "portfolio.json"
@@ -80,6 +80,15 @@ def stock_portfolio_system():
         print(f"Average cost £{portfolio[stock_ticker]['buy_price']:.2f}")
         print("=========================================")
 
+    def get_current_price(stock_ticker):
+        try:
+            stock_data = yf.Ticker(stock_ticker)        # variable created to store the libraries ticker symbol under 
+            history = stock_data.history(period="1d")   # grabs the data from the stocks ticker within the period of 1 day 
+            price = history["Close"].iloc[-1]            # Variable created to find the price of the stock from the day prior and displays it as the current price -1 is the back of the list for the integers locations
+            return price                
+        except Exception as e:  
+            print(f"Error fetching price for {stock_ticker}: {e}")  
+            return None
 
     def view_portfolio(portfolio):
         if not portfolio: 
@@ -91,10 +100,43 @@ def stock_portfolio_system():
         for stock_ticker, data in portfolio.items():
             shares = data["shares"]    
             buy_price = data["buy_price"]
-            print(f"{stock_ticker}  | {buy_price}  | {shares} ")
+            current_price = get_current_price(stock_ticker)
+            PL = (current_price - buy_price) * shares     
+            if PL > 0:
+                sign = "+"
+            elif PL < 0:
+                sign = ""  
+            else:
+                sign = ""
+            print(f"{stock_ticker}  | Shares: {shares}  | Avg Buy: £{buy_price}  | Current: £{current_price:.2f} | P&L: {sign}£{PL:.2f}")
+        
 
+    def trending_stock():
+        watchlist = ["AAPL", "TSLA", "NVDA", "MSFT", "AMZN", "META", "GOOGL"]
+        results = []
+        for ticker in watchlist:
+            try:
+                stock = yf.Ticker(ticker)
+                history = stock.history(period="5d")
 
-   # def trending_stock(api):
+                weekly_price = history["Close"].iloc[0]
+                current = history["Close"].iloc[-1]
+
+                change = ((current - weekly_price) / weekly_price) * 100
+                results.append((ticker, current, change))
+                    
+
+            except Exception as e:  
+                print(f"Skipping {ticker}: {e}")
+                continue
+
+        results.sort(key=lambda x: x[2], reverse=True) 
+        print("\n🔥 Trending Stocks This Week:")
+        print("================================")
+        for ticker, price, change in results[:5]:  
+            sign = "+" if change > 0 else ""
+            print(f"{ticker} | £{price:.2f} | {sign}{change:.2f}%")
+   
    # def portfolio_analysis(portfolio, stock_ticker, shares, buy_price):
    # def remove_stock(portfolio, stock_ticker)
 
@@ -151,7 +193,9 @@ def stock_portfolio_system():
         elif choice == 2:
             view_portfolio(stock_portfolio)
             continue         
-
+        elif choice == 3:
+             trending_stock()
+             continue 
         elif choice == 6:
             confirm = input("Are you sure you would like to save and exit? (y/n): ")
             if confirm.lower() == "y":
@@ -164,12 +208,12 @@ stock_portfolio_system()
 
 
 """"
-        elif choice == 3:
-             continue 
+
         elif choice == 4:
              continue 
         elif choice == 6:
             continue
     
         """
+
 
