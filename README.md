@@ -30,10 +30,10 @@ json - data persistence and storage
 os - file system operations and backup management
 
 # Roadmap
-- [ ] Real-time prices via API integration
-- [ ] Trending stocks - top movers of the week
+- ✅ Real-time prices via API integration
+- ✅ Trending stocks - top movers of the week
 - [ ] Portfolio analysis - trim/hold/add recommendations based on position weighting and P&L
-- [ ] P&L tracking - profit and loss per position
+- ✅ P&L tracking - profit and loss per position
 - [ ] Portfolio value - total current value of all holdings
 - [ ] Remove stock functionality
 - [ ] Price alerts - notify when stock hits target price
