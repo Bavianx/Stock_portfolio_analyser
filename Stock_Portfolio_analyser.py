@@ -1,8 +1,9 @@
 import requests , json , os, yfinance as yf 
 
+
+
 def stock_portfolio_system():
     filename = "portfolio.json"
-
     def load_file(filename):
         try:
             with open(filename, 'r') as f:
@@ -24,7 +25,7 @@ def stock_portfolio_system():
                 os.rename(filename, backup)                 #backup created 
             except:
                 pass                                        #If it already exists just continue
-            print("Starting with empty grade book.")
+            print("Starting with empty portfolio.")
             return {}                                       #creates new file to add data to
         
         except PermissionError:
@@ -36,7 +37,7 @@ def stock_portfolio_system():
         except Exception as e:
             print(f"ERROR: Unexpected error loading {filename}")
             print(f"Details: {e}")
-            print("Starting with empty grade book.")
+            print("Starting with empty portfolio.")
             return {}
 
         
@@ -62,8 +63,6 @@ def stock_portfolio_system():
     
     stock_portfolio = load_file(filename) 
 
-
-    portfolio = {}
 
     def add_stock(portfolio, stock_ticker, shares, buy_price):
         if stock_ticker not in portfolio:
@@ -119,26 +118,117 @@ def stock_portfolio_system():
                 stock = yf.Ticker(ticker)
                 history = stock.history(period="5d")
 
-                weekly_price = history["Close"].iloc[0]
-                current = history["Close"].iloc[-1]
+                if history.empty:
+                    print(f"No data for {ticker}")
+                    continue
 
+                weekly_price = history["Close"].iloc[0]
+                current = history["Close"].iloc[-1]       
                 change = ((current - weekly_price) / weekly_price) * 100
                 results.append((ticker, current, change))
-                    
-
             except Exception as e:  
                 print(f"Skipping {ticker}: {e}")
                 continue
 
         results.sort(key=lambda x: x[2], reverse=True) 
-        print("\n🔥 Trending Stocks This Week:")
+        print("\n Trending Stocks This Week:")
         print("================================")
         for ticker, price, change in results[:5]:  
             sign = "+" if change > 0 else ""
             print(f"{ticker} | £{price:.2f} | {sign}{change:.2f}%")
    
-   # def portfolio_analysis(portfolio, stock_ticker, shares, buy_price):
-   # def remove_stock(portfolio, stock_ticker)
+    def portfolio_analysis(portfolio):
+
+        if not portfolio:
+            print("Please add to your portfolio.")
+            return
+
+            #Gathers the portfolio value
+        total_portfolio_value = 0
+        stock_values = {}
+
+        for stock_ticker, data in portfolio.items():
+            shares = data["shares"]
+            current_price = get_current_price(stock_ticker) # Get current price
+
+            if current_price is None:
+                continue
+            
+            current_value = current_price * shares # Calculates current value
+            total_portfolio_value += current_value # Add to total
+            stock_values[stock_ticker] = current_value  #current value of stock 
+
+
+        print(f"\nTotal Portfolio Value: £{total_portfolio_value:.2f}\n")
+            #Gather the individual stock analysis
+        for stock_ticker, data in portfolio.items():
+            shares = data["shares"]
+            buy_price = data["buy_price"]
+            current_price = get_current_price(stock_ticker)
+
+            if current_price is None:
+                continue
+
+            current_value = stock_values[stock_ticker]  #Gathered data from previous value stored within the dictionary
+
+            #Finds the weight of the stock out of your entire portfolio
+            weight_stock = (current_value / total_portfolio_value) * 100
+            #Calculates the Profit & Loss against the shares purchased
+            pl = (current_price - buy_price) * shares
+            #Calculates the Profit & Loss against the buy price
+            pl_percent = ((current_price - buy_price) / buy_price) * 100
+
+            
+            if weight_stock > 30:
+                recommendation = "Trim postion!"
+                reason = "Overweight position (>30% threshold)"
+
+            elif pl_percent > 20:
+                recommendation = "HOLD"
+                reason = "Strong performer, maintain position"
+
+            elif pl_percent < -10:
+                recommendation = "Review your position"
+                reason = "Consider cutting losses"
+
+            elif weight_stock < 10:
+                recommendation = "ADD to position"
+                reason = "Underweight, consider adding"
+
+            else:
+                recommendation = "HOLD"
+                reason = "Balanced position"
+
+            print(f"{stock_ticker}:")
+            print(f"  Shares: {shares} | Avg Buy: £{buy_price:.2f} | Current: £{current_price:.2f}")
+            print(f"  Current Value: £{current_value:.2f}")
+            print(f"  P&L: £{pl:.2f} ({pl_percent:+.1f}%)")
+            print(f"  Weight: {weight_stock:.1f}% of portfolio")
+            print(f"  Recommendation: {recommendation}")
+            print(f"  Reason: {reason}\n")
+
+    def remove_stock(portfolio, stock_ticker, filename):
+        if stock_ticker not in portfolio:
+            print("Stock not found in portfolio!")
+            return False
+
+        data = portfolio[stock_ticker]      #Removes the need for a for loop grabs dictionary and creates a variable to refer back to under data
+        shares = data["shares"]       #Previous dictionary value used to grab nested data
+        buy_price = data["buy_price"]    #Previous dictionary value used to grab nested data
+        print(f"\nYour current share price for {stock_ticker} is {shares}")
+        print(f"Average buy price is £{buy_price}")
+
+        confirm = input(f"Are you sure you would like to remove {stock_ticker} (y/n)? ")
+        if confirm == "y":
+            remove = portfolio.pop(stock_ticker)
+            print(f" {stock_ticker} was successfully removed")
+            print(f"You had {remove['shares']} shares at £{remove['buy_price']:.2f}")
+
+            save_to_file(portfolio, filename)
+            return True
+        else:
+            print("Task was cancelled!")
+            return False
 
     while True:
         print("=========================================")
@@ -194,8 +284,20 @@ def stock_portfolio_system():
             view_portfolio(stock_portfolio)
             continue         
         elif choice == 3:
-             trending_stock()
-             continue 
+            trending_stock()
+            continue 
+        elif choice == 4:
+            portfolio_analysis(stock_portfolio)
+            continue
+        elif choice == 5:
+            stock_ticker = input("Which stock would you like to remove? ")
+            if not stock_ticker.strip():
+                print("Name cannot be empty!")
+                print("=====================================================")
+                continue
+            remove_stock(stock_portfolio, stock_ticker, filename)
+            continue
+
         elif choice == 6:
             confirm = input("Are you sure you would like to save and exit? (y/n): ")
             if confirm.lower() == "y":
@@ -204,16 +306,8 @@ def stock_portfolio_system():
                 break
             else:
                 print("Continue...")
+                
 stock_portfolio_system()
 
-
-""""
-
-        elif choice == 4:
-             continue 
-        elif choice == 6:
-            continue
-    
-        """
 
 
